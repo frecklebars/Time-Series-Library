@@ -22,10 +22,10 @@ class Model(nn.Module):
 
         self.mamba = Mamba(
             d_model = configs.d_model,
-            d_state = configs.d_ff,
+            d_state = configs.d_state,
             d_conv = configs.d_conv,
             expand = configs.expand,
-        )
+        ).to("cuda:0")
 
         self.out_layer = nn.Linear(configs.d_model, configs.c_out, bias=False)
 

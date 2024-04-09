@@ -18,10 +18,10 @@ python -u run.py \
   --d_layers 1 \
   --enc_in 7 \
   --expand 2 \
-  --d_ff 16 \
+  --d_state 2 \
   --d_conv 4 \
   --c_out 7 \
-  --d_model 128 \
+  --d_model 256 \
   --des 'Exp' \
   --itr 1 \
 

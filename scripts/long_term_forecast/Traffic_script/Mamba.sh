@@ -19,7 +19,7 @@ python -u run.py \
   --d_layers 1 \
   --enc_in 862 \
   --expand 2 \
-  --d_ff 16 \
+  --d_state 16 \
   --d_conv 4 \
   --c_out 862 \
   --d_model 128 \

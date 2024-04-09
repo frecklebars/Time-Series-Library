@@ -94,12 +94,12 @@ class MambaBlock(nn.Module):
         )
 
         # takes in x and outputs the input-specific delta, B, C
-        self.x_proj = nn.Linear(self.d_inner, self.dt_rank + configs.d_ff * 2, bias=False)
+        self.x_proj = nn.Linear(self.d_inner, self.dt_rank + configs.d_state * 2, bias=False)
 
         # projects delta
         self.dt_proj = nn.Linear(self.dt_rank, self.d_inner, bias=True)
 
-        A = repeat(torch.arange(1, configs.d_ff + 1), "n -> d n", d=self.d_inner)
+        A = repeat(torch.arange(1, configs.d_state + 1), "n -> d n", d=self.d_inner)
         self.A_log = nn.Parameter(torch.log(A))
         self.D = nn.Parameter(torch.ones(self.d_inner))
 
@@ -137,7 +137,7 @@ class MambaBlock(nn.Module):
         A = -torch.exp(self.A_log.float()) # [d_in, n]
         D = self.D.float() # [d_in]
 
-        x_dbl = self.x_proj(x) # [B, L, d_rank + 2 * d_ff]
+        x_dbl = self.x_proj(x) # [B, L, d_rank + 2 * d_state]
         (delta, B, C) = x_dbl.split(split_size=[self.dt_rank, n, n], dim=-1) # delta: [B, L, d_rank]; B, C: [B, L, n]
         delta = F.softplus(self.dt_proj(delta)) # [B, L, d_in]
         y = self.selective_scan(x, delta, A, B, C, D)

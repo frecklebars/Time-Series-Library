@@ -18,7 +18,7 @@ python -u run.py \
   --e_layers 2 \
   --enc_in 7 \
   --expand 2 \
-  --d_ff 16 \
+  --d_state 16 \
   --d_conv 4 \
   --c_out 7 \
   --d_model 128 \
