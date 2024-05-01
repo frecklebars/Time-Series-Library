@@ -62,5 +62,8 @@ class Exp_Basic(object):
     def train(self):
         pass
 
+    def pretrain(self, setting):
+        print("pretraining test")
+
     def test(self):
         pass

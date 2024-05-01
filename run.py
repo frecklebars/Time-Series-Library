@@ -37,6 +37,9 @@ if __name__ == '__main__':
                         help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 
+    # pretrain
+    parser.add_argument('--is_pretraining', type=int, default=0, help='pretrain status')
+
     # forecasting task
     parser.add_argument('--seq_len', type=int, default=96, help='input sequence length')
     parser.add_argument('--label_len', type=int, default=48, help='start token length')
@@ -113,7 +116,7 @@ if __name__ == '__main__':
     # args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
     args.use_gpu = True if torch.cuda.is_available() else False
 
-    print(torch.cuda.is_available())
+    # print(torch.cuda.is_available())
 
     if args.use_gpu and args.use_multi_gpu:
         args.devices = args.devices.replace(' ', '')
@@ -137,7 +140,43 @@ if __name__ == '__main__':
     else:
         Exp = Exp_Long_Term_Forecast
 
-    if args.is_training:
+    if args.is_pretraining:
+        for ii in range(args.itr):
+            exp = Exp(args)  # set experiments
+            setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_expand{}_dc{}_dst{}_fc{}_eb{}_dt{}_{}_{}'.format(
+                args.task_name,
+                args.model_id,
+                args.model,
+                args.data,
+                args.features,
+                args.seq_len,
+                args.label_len,
+                args.pred_len,
+                args.d_model,
+                args.n_heads,
+                args.e_layers,
+                args.d_layers,
+                args.d_ff,
+                args.expand,
+                args.d_conv,
+                args.d_state,
+                args.factor,
+                args.embed,
+                args.distil,
+                args.des, ii)
+            
+            print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+            exp.pretrain(setting)
+
+            if args.is_training:
+                print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+                exp.train(setting)
+
+                print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+                exp.test(setting)
+                torch.cuda.empty_cache()    
+
+    elif args.is_training: 
         for ii in range(args.itr):
             # setting record of experiments
             exp = Exp(args)  # set experiments
@@ -171,7 +210,7 @@ if __name__ == '__main__':
             torch.cuda.empty_cache()
     else:
         ii = 0
-        setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_expand{}_dc{}_fc{}_eb{}_dt{}_{}_{}'.format(
+        setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_expand{}_dc{}_dst{}_fc{}_eb{}_dt{}_{}_{}'.format(
             args.task_name,
             args.model_id,
             args.model,
@@ -187,6 +226,7 @@ if __name__ == '__main__':
             args.d_ff,
             args.expand,
             args.d_conv,
+            args.d_state,
             args.factor,
             args.embed,
             args.distil,
