@@ -3,7 +3,11 @@ import torch.nn as nn
 from layers.Mamba_EncDec import Encoder, EncoderLayer
 from layers.Embed import DataEmbedding_inverted
 
+from contrastive.augmentation import RandomAUG
+
 from mamba_ssm import Mamba
+# from kan import KAN
+
 class Model(nn.Module):
     """
     Paper link: https://arxiv.org/abs/2310.06625
@@ -12,8 +16,9 @@ class Model(nn.Module):
     def __init__(self, configs):
         super(Model, self).__init__()
         self.seq_len = configs.seq_len
+        self.task_name = configs.task_name
         self.pred_len = configs.pred_len
-        self.output_attention = configs.output_attention
+        # self.output_attention = configs.output_attention
         self.use_norm = configs.use_norm
         # Embedding
         self.enc_embedding = DataEmbedding_inverted(configs.seq_len, configs.d_model, configs.embed, configs.freq,
@@ -44,19 +49,16 @@ class Model(nn.Module):
             norm_layer=torch.nn.LayerNorm(configs.d_model)
         )
         self.projector = nn.Linear(configs.d_model, configs.pred_len, bias=True)
-    # a = self.get_parameter_number()
-    #
-    # def get_parameter_number(self):
-    #     """
-    #     Number of model parameters (without stable diffusion)
-    #     """
-    #     total_num = sum(p.numel() for p in self.parameters())
-    #     trainable_num = sum(p.numel() for p in self.parameters() if p.requires_grad)
-    #     trainable_ratio = trainable_num / total_num
-    #
-    #     print('total_num:', total_num)
-    #     print('trainable_num:', total_num)
-    #     print('trainable_ratio:', trainable_ratio)
+        # self.kan_projector = KAN(
+        #     width=[configs.d_model, configs.d_model*2, configs.pred_len],
+        #     grid=5,
+        # )
+
+        if configs.is_pretraining:
+            self.augmenter = RandomAUG(configs) # TODO get an augmentation strategy parameter
+            self.contrastive_projector = nn.Linear(configs.d_model * configs.enc_in, configs.pre_out, bias=True) # TODO parametrize output dim
+            
+
 
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         if self.use_norm:
@@ -80,6 +82,7 @@ class Model(nn.Module):
         enc_out, attns = self.encoder(enc_out, attn_mask=None)
         # B N E -> B N S -> B S N 
         dec_out = self.projector(enc_out).permute(0, 2, 1)[:, :, :N] # filter the covariates
+        # dec_out = self.kan_projector(enc_out.permute(0, 2, 1))[:, :, :N]
 
         if self.use_norm:
             # De-Normalization from Non-stationary Transformer
@@ -88,7 +91,30 @@ class Model(nn.Module):
 
         return dec_out
 
+    def contrastive_pretrain(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
+        B, _, N = x_enc.shape
+
+        x_enc_aug_1, _ = self.augmenter(x_enc)
+        x_enc_aug_2, _ = self.augmenter(x_enc)
+
+        x_enc_aug_1 = self.enc_embedding(x_enc_aug_1, x_mark_enc)
+        x_enc_aug_2 = self.enc_embedding(x_enc_aug_2, x_mark_enc)
+
+        x_enc_aug_1_out, _ = self.encoder(x_enc_aug_1, attn_mask=None)
+        x_enc_aug_2_out, _ = self.encoder(x_enc_aug_2, attn_mask=None)
+
+        x_enc_aug_1_out = x_enc_aug_1_out.permute(0, 2, 1)[:, :, :N]
+        x_enc_aug_2_out = x_enc_aug_2_out.permute(0, 2, 1)[:, :, :N]
+
+        x_enc_aug_1_out = x_enc_aug_1_out.reshape(x_enc_aug_1_out.shape[0], x_enc_aug_1_out.shape[1] * x_enc_aug_1_out.shape[2])
+        x_enc_aug_2_out = x_enc_aug_2_out.reshape(x_enc_aug_2_out.shape[0], x_enc_aug_2_out.shape[1] * x_enc_aug_2_out.shape[2])
+
+        dec_aug_1_out = self.contrastive_projector(x_enc_aug_1_out)
+        dec_aug_2_out = self.contrastive_projector(x_enc_aug_2_out)
+
+        return dec_aug_1_out, dec_aug_2_out
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
-        dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
-        return dec_out[:, -self.pred_len:, :]  # [B, L, D]
+        if self.task_name in ['short_term_forecast', 'long_term_forecast']:
+            dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
+            return dec_out[:, -self.pred_len:, :]  # [B, L, D]

@@ -90,7 +90,6 @@ def window_warp(x_torch, window_ratio=0.3, scales=[0.5, 2.]):
     ret = torch.transpose(ret, 2, 1)
     return ret
 
-
 def subsequence(x):
     seq_len = x.shape[1]
     crop_len = np.random.randint(low=2, high=seq_len + 1)
@@ -107,3 +106,4 @@ def subsequence(x):
     return cropped_ts
 
 
+all_augmentations = [jitter, scaling, cutout, time_warp, magnitude_warp, window_slice, window_warp, subsequence]

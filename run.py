@@ -39,6 +39,11 @@ if __name__ == '__main__':
 
     # pretrain
     parser.add_argument('--is_pretraining', type=int, default=0, help='pretrain status')
+    parser.add_argument('--aug_p', type=float, default=0.2, help='augmentation probability')
+    parser.add_argument('--pretrain_epochs', type=int, default=10, help='pretrain epochs')
+    parser.add_argument('--pre_batch_size', type=int, default=32, help='batch size of pretraining input data')
+    parser.add_argument('--pre_out', type=int, default=128, help='pretrain output size')
+
 
     # forecasting task
     parser.add_argument('--seq_len', type=int, default=96, help='input sequence length')
@@ -143,8 +148,9 @@ if __name__ == '__main__':
     if args.is_pretraining:
         for ii in range(args.itr):
             exp = Exp(args)  # set experiments
-            setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_expand{}_dc{}_dst{}_fc{}_eb{}_dt{}_{}_{}'.format(
+            setting = '{}{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_expand{}_dc{}_dst{}_fc{}_eb{}_dt{}_ap{}_{}_{}'.format(
                 args.task_name,
+                "_pretrained" if args.is_pretraining else "",
                 args.model_id,
                 args.model,
                 args.data,
@@ -163,6 +169,7 @@ if __name__ == '__main__':
                 args.factor,
                 args.embed,
                 args.distil,
+                args.aug_p,
                 args.des, ii)
             
             print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
