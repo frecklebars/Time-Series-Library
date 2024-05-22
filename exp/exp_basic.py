@@ -77,7 +77,8 @@ class Exp_Basic(object):
 
     def pretrain(self, setting):
         train_data, train_loader = self._get_data(flag='train')
-        # vali_data, vali_loader = self._get_data(flag='val') # TODO ! custom pretraining data provider
+        vali_data, vali_loader = self._get_data(flag='val')
+        # TODO ! custom pretraining data provider
         # test_data, test_loader = self._get_data(flag='test')
 
         # data_loaders = [train_loader, vali_loader, test_loader]
@@ -93,11 +94,13 @@ class Exp_Basic(object):
 
         model_optim = torch.optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
         criterion = NTXentLoss(temperature=0.10)
+        vali_criterion = self._select_criterion()
 
         # if self.args.use_amp:
         #     scaler = torch.cuda.amp.GradScaler()
 
         epoch_losses = []
+        vali_losses = []
 
         for epoch in range(self.args.pretrain_epochs):
             iter_count = 0
@@ -108,7 +111,9 @@ class Exp_Basic(object):
                 
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
                 iter_count += 1
-                model_optim.zero_grad()
+                
+                if (i + 1) % self.args.pre_accumulation_steps == 0 or i == train_steps - 1:
+                    model_optim.zero_grad()
 
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
@@ -117,11 +122,11 @@ class Exp_Basic(object):
 
                 # TODO do the amp here
 
-                batch_x_aug_1, batch_x_aug_2 = self.model.contrastive_pretrain(batch_x, batch_x_mark, batch_y, batch_y_mark)
+                batch_x_aug_1, batch_x_aug_2 = self.model(batch_x, batch_x_mark, batch_y, batch_y_mark)
 
                 batch_x_aug_1 = batch_x_aug_1.to(self.device)
                 batch_x_aug_2 = batch_x_aug_2.to(self.device)
-
+                
                 outputs = torch.cat((batch_x_aug_1, batch_x_aug_2), dim=0)
                 indices = torch.arange(0, batch_x_aug_1.shape[0], device=self.device)
                 labels = torch.cat((indices, indices), dim=0)
@@ -138,15 +143,21 @@ class Exp_Basic(object):
                     iter_count = 0
                     time_now = time.time()
                 
+                loss = loss / self.args.pre_accumulation_steps
                 loss.backward()
-                model_optim.step()
+
+                if (i + 1) % self.args.pre_accumulation_steps == 0 or i == train_steps - 1:
+                    model_optim.step()
+                
             
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
             epoch_losses.append(train_loss)
+            vali_loss = self.vali(train_loader, vali_loader, vali_criterion)
+            vali_losses.append(vali_loss)
                 
-            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}".format(epoch + 1, train_steps, train_loss))
-            early_stopping(train_loss, self.model, path)
+            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}, Vali Loss: {3:.7f}".format(epoch + 1, train_steps, train_loss, vali_loss))
+            early_stopping(vali_loss, self.model, path)
             if early_stopping.early_stop:
                 print("Early stopping")
                 break
@@ -154,10 +165,12 @@ class Exp_Basic(object):
             adjust_learning_rate(model_optim, epoch, self.args)
 
         print("Epoch Losses: ", epoch_losses)
+        print("Vali  Losses: ", vali_losses)
         best_model_path = path + "/" + "checkpoint.pth"
         self.model.load_state_dict(torch.load(best_model_path))
 
         self.model.is_pretraining = False
+        # self.args.learning_rate = self.args.ft_lr
 
         return self.model
 

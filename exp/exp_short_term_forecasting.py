@@ -230,6 +230,12 @@ class Exp_Short_Term_Forecast(Exp_Basic):
             print('mape:', mape)
             print('mase:', mase)
             print('owa:', owa_results)
+            f = open("result_short_term_forecast.txt", 'a')
+            f.write(setting + "  \n")
+            f.write('smape:{}\nmape:{}\nmase:{}\nowa:{}'.format(smape_results, mape, mase, owa_results))
+            f.write('\n')
+            f.write('\n')
+            f.close()
         else:
             print('After all 6 tasks are finished, you can calculate the averaged index')
         return

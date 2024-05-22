@@ -3,7 +3,7 @@ import torch.nn as nn
 from layers.Mamba_EncDec import Encoder, EncoderLayer
 from layers.Embed import DataEmbedding_inverted
 
-from contrastive.augmentation import RandomAUG
+from contrastive.augmentation import RandomAUG, AutoAUG
 
 from mamba_ssm import Mamba
 # from kan import KAN
@@ -18,6 +18,7 @@ class Model(nn.Module):
         self.seq_len = configs.seq_len
         self.task_name = configs.task_name
         self.pred_len = configs.pred_len
+        self.is_pretraining = configs.is_pretraining
         # self.output_attention = configs.output_attention
         self.use_norm = configs.use_norm
         # Embedding
@@ -49,14 +50,12 @@ class Model(nn.Module):
             norm_layer=torch.nn.LayerNorm(configs.d_model)
         )
         self.projector = nn.Linear(configs.d_model, configs.pred_len, bias=True)
-        # self.kan_projector = KAN(
-        #     width=[configs.d_model, configs.d_model*2, configs.pred_len],
-        #     grid=5,
-        # )
 
         if configs.is_pretraining:
-            self.augmenter = RandomAUG(configs) # TODO get an augmentation strategy parameter
-            self.contrastive_projector = nn.Linear(configs.d_model * configs.enc_in, configs.pre_out, bias=True) # TODO parametrize output dim
+            # self.augmenter = RandomAUG(configs) # TODO get an augmentation strategy parameter
+            self.augmenter = AutoAUG(configs) 
+            # self.contrastive_projector = nn.Linear(configs.d_model * configs.enc_in, configs.pre_out, bias=True)
+            self.contrastive_projector = nn.Linear(configs.d_model, configs.pre_out, bias=True) 
             
 
 
@@ -92,29 +91,44 @@ class Model(nn.Module):
         return dec_out
 
     def contrastive_pretrain(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
-        B, _, N = x_enc.shape
+        B, L, N = x_enc.shape
 
+        # B L N -> B L N
         x_enc_aug_1, _ = self.augmenter(x_enc)
         x_enc_aug_2, _ = self.augmenter(x_enc)
 
+        # B L N -> B N E
         x_enc_aug_1 = self.enc_embedding(x_enc_aug_1, x_mark_enc)
         x_enc_aug_2 = self.enc_embedding(x_enc_aug_2, x_mark_enc)
 
+        # B N E -> B N E
         x_enc_aug_1_out, _ = self.encoder(x_enc_aug_1, attn_mask=None)
         x_enc_aug_2_out, _ = self.encoder(x_enc_aug_2, attn_mask=None)
 
-        x_enc_aug_1_out = x_enc_aug_1_out.permute(0, 2, 1)[:, :, :N]
-        x_enc_aug_2_out = x_enc_aug_2_out.permute(0, 2, 1)[:, :, :N]
+        # x_enc_aug_1_out = x_enc_aug_1_out.permute(0, 2, 1)[:, :, :N]
+        # x_enc_aug_2_out = x_enc_aug_2_out.permute(0, 2, 1)[:, :, :N]
 
-        x_enc_aug_1_out = x_enc_aug_1_out.reshape(x_enc_aug_1_out.shape[0], x_enc_aug_1_out.shape[1] * x_enc_aug_1_out.shape[2])
-        x_enc_aug_2_out = x_enc_aug_2_out.reshape(x_enc_aug_2_out.shape[0], x_enc_aug_2_out.shape[1] * x_enc_aug_2_out.shape[2])
+        # x_enc_aug_1_out = x_enc_aug_1_out.permute(0, 2, 1).reshape(x_enc_aug_1_out.shape[0], x_enc_aug_1_out.shape[1] * x_enc_aug_1_out.shape[2])
+        # x_enc_aug_2_out = x_enc_aug_2_out.permute(0, 2, 1).reshape(x_enc_aug_2_out.shape[0], x_enc_aug_2_out.shape[1] * x_enc_aug_2_out.shape[2])
 
-        dec_aug_1_out = self.contrastive_projector(x_enc_aug_1_out)
-        dec_aug_2_out = self.contrastive_projector(x_enc_aug_2_out)
+        # B N E -> B N S
+        dec_aug_1_out = self.contrastive_projector(x_enc_aug_1_out)[:, :N, :]
+        dec_aug_2_out = self.contrastive_projector(x_enc_aug_2_out)[:, :N, :]
+
+        # B N S -> B S
+        B, N, S = dec_aug_1_out.shape
+        dec_aug_1_out = dec_aug_1_out.reshape(B*N, S)
+        dec_aug_2_out = dec_aug_2_out.reshape(B*N, S)
+
+        # dec_aug_1_out = dec_aug_1_out.unsqueeze(1).permute(0, 2, 1)
+        # dec_aug_2_out = dec_aug_2_out.unsqueeze(1).permute(0, 2, 1)
 
         return dec_aug_1_out, dec_aug_2_out
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+        if self.is_pretraining and self.training:
+            dec_out_1, dec_out_2 = self.contrastive_pretrain(x_enc, x_mark_enc, x_dec, x_mark_dec)
+            return dec_out_1, dec_out_2
         if self.task_name in ['short_term_forecast', 'long_term_forecast']:
             dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
             return dec_out[:, -self.pred_len:, :]  # [B, L, D]

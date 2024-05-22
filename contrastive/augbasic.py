@@ -107,3 +107,4 @@ def subsequence(x):
 
 
 all_augmentations = [jitter, scaling, cutout, time_warp, magnitude_warp, window_slice, window_warp, subsequence]
+# all_augmentations = [jitter, scaling, cutout, time_warp, window_slice, window_warp, subsequence]

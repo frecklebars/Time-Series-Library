@@ -12,10 +12,10 @@ python -u run.py \
   --pre_out 128 \
   --is_training 1 \
   --root_path ./dataset/ETT-small/ \
-  --data_path ETTh1.csv \
-  --model_id ETTh1_96_$pred_len \
+  --data_path ETTh2.csv \
+  --model_id ETTh2_96_$pred_len \
   --model $model_name \
-  --data ETTh1 \
+  --data ETTh2 \
   --features M \
   --seq_len 96 \
   --pred_len $pred_len \

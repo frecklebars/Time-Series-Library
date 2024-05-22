@@ -5,6 +5,7 @@ from layers.Transformer_EncDec import Decoder, DecoderLayer, Encoder, EncoderLay
 from layers.SelfAttention_Family import ProbAttention, AttentionLayer
 from layers.Embed import DataEmbedding
 
+from contrastive.augmentation import RandomAUG, AutoAUG
 
 class Model(nn.Module):
     """
@@ -73,6 +74,9 @@ class Model(nn.Module):
             self.act = F.gelu
             self.dropout = nn.Dropout(configs.dropout)
             self.projection = nn.Linear(configs.d_model * configs.seq_len, configs.num_class)
+        if configs.is_pretraining:
+            self.augmenter = RandomAUG(configs)
+            self.contrastive_projector = nn.Linear(configs.d_model * configs.enc_in, configs.pre_out, bias=True)
 
     def long_forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         enc_out = self.enc_embedding(x_enc, x_mark_enc)

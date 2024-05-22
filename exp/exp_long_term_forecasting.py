@@ -104,7 +104,9 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             epoch_time = time.time()
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
                 iter_count += 1
-                model_optim.zero_grad()
+
+                if (i + 1) % self.args.accumulation_steps == 0 or i == train_steps - 1:
+                    model_optim.zero_grad()
 
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
@@ -153,8 +155,11 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                     scaler.step(model_optim)
                     scaler.update()
                 else:
+                    loss = loss / self.args.accumulation_steps
                     loss.backward()
-                    model_optim.step()
+
+                    if (i + 1) % self.args.accumulation_steps == 0 or i == train_steps - 1:
+                        model_optim.step()
 
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
