@@ -10,7 +10,8 @@ from utils.tools import adjust_learning_rate, EarlyStopping
 
 from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer, DLinear, FEDformer, \
     Informer, LightTS, Reformer, ETSformer, Pyraformer, PatchTST, MICN, Crossformer, FiLM, iTransformer, \
-    Koopa, TiDE, FreTS, TimeMixer, TSMixer, SegRNN, MambaSimple, Mamba, S_Mamba
+    Koopa, TiDE, FreTS, TimeMixer, TSMixer, SegRNN, TemporalFusionTransformer, SCINet, \
+    MambaSimple, Mamba, S_Mamba
 
 from contrastive.augmentation import RandomAUG
 
@@ -43,8 +44,15 @@ class Exp_Basic(object):
             "S_Mamba": S_Mamba,
             'TimeMixer': TimeMixer,
             'TSMixer': TSMixer,
-            'SegRNN': SegRNN
+            'SegRNN': SegRNN,
+            'TemporalFusionTransformer': TemporalFusionTransformer,
+            "SCINet": SCINet
         }
+        if args.model == 'Mamba':
+            print('Please make sure you have successfully installed mamba_ssm')
+            from models import Mamba
+            self.model_dict[Mamba] = Mamba
+
         self.device = self._acquire_device()
         self.model = self._build_model().to(self.device)
 

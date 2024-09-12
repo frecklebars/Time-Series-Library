@@ -23,23 +23,15 @@ def data_provider(args, flag):
     Data = data_dict[args.data]
     timeenc = 0 if args.embed != 'timeF' else 1
 
-    if flag == 'test':
-        shuffle_flag = False
-        drop_last = True
-        if args.task_name == 'anomaly_detection' or args.task_name == 'classification':
-            batch_size = args.pre_batch_size if args.is_pretraining else args.batch_size
-        else:
-            batch_size = 1  # bsz=1 for evaluation
-        freq = args.freq
-    else:
-        shuffle_flag = True
-        drop_last = True
-        batch_size = args.pre_batch_size if args.is_pretraining else args.batch_size  # bsz for train and valid
-        freq = args.freq
+    shuffle_flag = False if (flag == 'test' or flag == 'TEST') else True
+    drop_last = False
+    batch_size = args.pre_batch_size if args.is_pretraining else args.batch_size
+    freq = args.freq
 
     if args.task_name == 'anomaly_detection':
         drop_last = False
         data_set = Data(
+            args = args,
             root_path=args.root_path,
             win_size=args.seq_len,
             flag=flag,
@@ -55,6 +47,7 @@ def data_provider(args, flag):
     elif args.task_name == 'classification':
         drop_last = False
         data_set = Data(
+            args = args,
             root_path=args.root_path,
             flag=flag,
         )
@@ -72,6 +65,7 @@ def data_provider(args, flag):
         if args.data == 'm4':
             drop_last = False
         data_set = Data(
+            args = args,
             root_path=args.root_path,
             data_path=args.data_path,
             flag=flag,
