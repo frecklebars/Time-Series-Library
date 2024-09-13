@@ -48,10 +48,10 @@ class Exp_Basic(object):
             'TemporalFusionTransformer': TemporalFusionTransformer,
             "SCINet": SCINet
         }
-        if args.model == 'Mamba':
-            print('Please make sure you have successfully installed mamba_ssm')
-            from models import Mamba
-            self.model_dict[Mamba] = Mamba
+        # if args.model == 'Mamba':
+        #     print('Please make sure you have successfully installed mamba_ssm')
+        #     from models import Mamba
+        #     self.model_dict[Mamba] = Mamba
 
         self.device = self._acquire_device()
         self.model = self._build_model().to(self.device)
