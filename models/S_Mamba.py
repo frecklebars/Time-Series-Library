@@ -6,7 +6,6 @@ from layers.Embed import DataEmbedding_inverted
 from contrastive.augmentation import RandomAUG, AutoAUG
 
 from mamba_ssm import Mamba
-# from kan import KAN
 
 class Model(nn.Module):
     """
@@ -81,7 +80,6 @@ class Model(nn.Module):
         enc_out, attns = self.encoder(enc_out, attn_mask=None)
         # B N E -> B N S -> B S N 
         dec_out = self.projector(enc_out).permute(0, 2, 1)[:, :, :N] # filter the covariates
-        # dec_out = self.kan_projector(enc_out.permute(0, 2, 1))[:, :, :N]
 
         if self.use_norm:
             # De-Normalization from Non-stationary Transformer

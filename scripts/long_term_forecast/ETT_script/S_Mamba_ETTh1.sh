@@ -23,6 +23,8 @@ python -u run.py \
   --d_state 2\
   --d_ff 256 \
   --itr 1 \
-  --learning_rate 0.00007
+  --learning_rate 0.00007 \
+  --augmentation_ratio 1\
+  --magwarp
 
 done

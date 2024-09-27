@@ -1,6 +1,5 @@
-# export CUDA_VISIBLE_DEVICES=2
-
 model_name=S_Mamba
+
 for pred_len in 96 192 336 720
 do
 
@@ -25,7 +24,7 @@ python -u run.py \
   --c_out 7 \
   --des 'Exp' \
   --d_model 128 \
-  --d_state 2\
+  --d_state 2 \
   --d_ff 256 \
   --itr 1 \
   --learning_rate 0.00007

@@ -348,7 +348,7 @@ def run_augmentation(x, y, args):
     return x_aug, y_aug, augmentation_tags
 
 def run_augmentation_single(x, y, args):
-    # print("Augmenting %s"%args.data)
+    print("Augmenting %s"%args.data)
     np.random.seed(args.seed)
 
     x_aug = x
@@ -380,6 +380,8 @@ def run_augmentation_single(x, y, args):
     if(len(x.shape)<3):
         # Reverse to two-dimensional in whole series augmentation scenario
         x_aug = x_aug.squeeze(0)
+
+    print(f'Augmentation tags: {augmentation_tags}')
     return x_aug, y_aug, augmentation_tags
 
 
