@@ -1,12 +1,13 @@
+import torch
 import numpy as np
 from tqdm import tqdm
 
-def jitter(x, sigma=0.03):
+def jitter(x, sigma=0.1):
     # https://arxiv.org/pdf/1706.00527.pdf
     return x + np.random.normal(loc=0., scale=sigma, size=x.shape)
 
 
-def scaling(x, sigma=0.1):
+def scaling(x, sigma=0.25):
     # https://arxiv.org/pdf/1706.00527.pdf
     factor = np.random.normal(loc=1., scale=sigma, size=(x.shape[0],x.shape[2]))
     return np.multiply(x, factor[:,np.newaxis,:])
@@ -331,7 +332,7 @@ def discriminative_guided_warp_shape(x, labels, batch_size=6, slope_constraint="
 
 def run_augmentation(x, y, args):
     print("Augmenting %s"%args.data)
-    np.random.seed(args.seed)
+    # np.random.seed(args.seed)
     x_aug = x
     y_aug = y
     if args.augmentation_ratio > 0:
@@ -349,7 +350,7 @@ def run_augmentation(x, y, args):
 
 def run_augmentation_single(x, y, args):
     # print("Augmenting %s"%args.data)
-    np.random.seed(args.seed)
+    # np.random.seed(args.seed)
 
     x_aug = x
     y_aug = y
@@ -380,6 +381,13 @@ def run_augmentation_single(x, y, args):
     if(len(x.shape)<3):
         # Reverse to two-dimensional in whole series augmentation scenario
         x_aug = x_aug.squeeze(0)
+
+    # print(f'Augmentation tags: {augmentation_tags}')
+    if type(x_aug) == np.ndarray:
+        x_aug = torch.from_numpy(x_aug)
+    if type(y_aug) == np.ndarray:
+        y_aug = torch.from_numpy(y_aug)
+
     return x_aug, y_aug, augmentation_tags
 
 

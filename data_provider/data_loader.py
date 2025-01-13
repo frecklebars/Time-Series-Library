@@ -84,8 +84,8 @@ class Dataset_ETT_hour(Dataset):
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
 
-        if self.set_type == 0 and self.args.augmentation_ratio > 0:
-            self.data_x, self.data_y, augmentation_tags = run_augmentation_single(self.data_x, self.data_y, self.args)
+        # if self.set_type == 0 and self.args.augmentation_ratio > 0:
+            # self.data_x, self.data_y, augmentation_tags = run_augmentation_single(self.data_x, self.data_y, self.args)
 
         self.data_stamp = data_stamp
 
@@ -179,8 +179,8 @@ class Dataset_ETT_minute(Dataset):
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
 
-        if self.set_type == 0 and self.args.augmentation_ratio > 0:
-            self.data_x, self.data_y, augmentation_tags = run_augmentation_single(self.data_x, self.data_y, self.args)
+        # if self.set_type == 0 and self.args.augmentation_ratio > 0:
+        #     self.data_x, self.data_y, augmentation_tags = run_augmentation_single(self.data_x, self.data_y, self.args)
 
         self.data_stamp = data_stamp
 
@@ -282,8 +282,8 @@ class Dataset_Custom(Dataset):
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
 
-        if self.set_type == 0 and self.args.augmentation_ratio > 0:
-            self.data_x, self.data_y, augmentation_tags = run_augmentation_single(self.data_x, self.data_y, self.args)
+        # if self.set_type == 0 and self.args.augmentation_ratio > 0:
+        #     self.data_x, self.data_y, augmentation_tags = run_augmentation_single(self.data_x, self.data_y, self.args)
 
         self.data_stamp = data_stamp
 
@@ -732,14 +732,14 @@ class UEAloader(Dataset):
     def __getitem__(self, ind):
         batch_x = self.feature_df.loc[self.all_IDs[ind]].values
         labels = self.labels_df.loc[self.all_IDs[ind]].values
-        if self.flag == "TRAIN" and self.args.augmentation_ratio > 0:
-            num_samples = len(self.all_IDs)
-            num_columns = self.feature_df.shape[1]
-            seq_len = int(self.feature_df.shape[0] / num_samples)
-            batch_x = batch_x.reshape((1, seq_len, num_columns))
-            batch_x, labels, augmentation_tags = run_augmentation_single(batch_x, labels, self.args)
+        # if self.flag == "TRAIN" and self.args.augmentation_ratio > 0:
+        #     num_samples = len(self.all_IDs)
+        #     num_columns = self.feature_df.shape[1]
+        #     seq_len = int(self.feature_df.shape[0] / num_samples)
+        #     batch_x = batch_x.reshape((1, seq_len, num_columns))
+        #     batch_x, labels, augmentation_tags = run_augmentation_single(batch_x, labels, self.args)
 
-            batch_x = batch_x.reshape((1 * seq_len, num_columns))
+        #     batch_x = batch_x.reshape((1 * seq_len, num_columns))
 
         return self.instance_norm(torch.from_numpy(batch_x)), \
                torch.from_numpy(labels)

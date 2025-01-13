@@ -158,10 +158,15 @@ data_loader_all.py
 /utils/self_tools.py
 /scripts/exp_scripts/
 
-checkpoints/
-results/
-result_long_term_forecast.txt
-result_anomaly_detection.txt
+/checkpoints/
+/results/
+result*.txt
+results*.ods
+
+pg*.ipynb
+
+old_augs/
+
 scripts/augmentation/
 run_anylearn.py
 environment.txt

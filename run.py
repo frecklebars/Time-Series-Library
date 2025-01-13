@@ -111,9 +111,19 @@ if __name__ == '__main__':
     parser.add_argument('--use_dtw', type=bool, default=False, 
                         help='the controller of using dtw metric (dtw is time consuming, not suggested unless necessary)')
     
+    # pretrain
+    parser.add_argument('--is_pretraining', type=int, default=0, help='pretrain status')
+    parser.add_argument('--pretrain_strategy', type=str, default="ContrastiveBasic", help='pretrain strategy')
+    parser.add_argument('--aug_p', type=float, default=0.2, help='augmentation probability')
+    parser.add_argument('--pretrain_epochs', type=int, default=10, help='pretrain epochs')
+    parser.add_argument('--pre_batch_size', type=int, default=32, help='batch size of pretraining input data')
+    parser.add_argument('--pre_out', type=int, default=128, help='pretrain output size')
+    parser.add_argument('--pre_accumulation_steps', type=int, default=1, help='pretrain gradient accumulation steps')
+
     # Augmentation
     parser.add_argument('--augmentation_ratio', type=int, default=0, help="How many times to augment")
     parser.add_argument('--seed', type=int, default=2, help="Randomization seed")
+    parser.add_argument('--aug_strategy', type=str, default="BasicAUG", help='augmentation strategy')
     parser.add_argument('--jitter', default=False, action="store_true", help="Jitter preset augmentation")
     parser.add_argument('--scaling', default=False, action="store_true", help="Scaling preset augmentation")
     parser.add_argument('--permutation', default=False, action="store_true", help="Equal Length Permutation preset augmentation")
@@ -162,7 +172,47 @@ if __name__ == '__main__':
     else:
         Exp = Exp_Long_Term_Forecast
 
-    if args.is_training:
+    # if args.is_pretraining:
+    #     for ii in range(args.itr):
+    #         exp = Exp(args)  # set experiments
+    #         setting = '{}{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_expand{}_dc{}_dst{}_fc{}_eb{}_dt{}_ap{}_preb{}_po{}_{}_{}'.format(
+    #             args.task_name,
+    #             "_pretrained" if args.is_pretraining else "",
+    #             args.model_id,
+    #             args.model,
+    #             args.data,
+    #             args.features,
+    #             args.seq_len,
+    #             args.label_len,
+    #             args.pred_len,
+    #             args.d_model,
+    #             args.n_heads,
+    #             args.e_layers,
+    #             args.d_layers,
+    #             args.d_ff,
+    #             args.expand,
+    #             args.d_conv,
+    #             args.d_state,
+    #             args.factor,
+    #             args.embed,
+    #             args.distil,
+    #             args.aug_p,
+    #             args.pre_batch_size,
+    #             args.pre_out,
+    #             args.des, ii)
+            
+    #         print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+    #         exp.pretrain(setting)
+
+    #         if args.is_training:
+    #             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+    #             exp.train(setting)
+
+    #             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+    #             exp.test(setting)
+    #             torch.cuda.empty_cache()    
+
+    if args.is_training: 
         for ii in range(args.itr):
             # setting record of experiments
             exp = Exp(args)  # set experiments
@@ -186,6 +236,11 @@ if __name__ == '__main__':
                 args.embed,
                 args.distil,
                 args.des, ii)
+
+            if args.is_pretraining:
+                print('>>>>>>>start pretraining : {}>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+                exp.pretrain(setting)
+            quit() # TODO remove
 
             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
             exp.train(setting)
